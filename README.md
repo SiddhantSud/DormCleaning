@@ -9,7 +9,7 @@ and earn points.
 
 | Sheet value       | In the app            | Colour | Icon |
 |-------------------|-----------------------|--------|------|
-| `Change Bedsheet` | Change bedsheet       | Blue   | ⇄ arrows |
+| `Change Bedsheet` | Change bedsheet       | Red    | ⇄ arrows |
 | `Set`             | Dust & reset          | Amber  | ✦ sparkle |
 | `Leave`           | Do not touch (guest staying) | Grey, striped | ⊘ |
 | *(after tapping)* | Done                  | Green  | ✓ |

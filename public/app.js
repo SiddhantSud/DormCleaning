@@ -83,7 +83,7 @@
     const dpr = devicePixelRatio || 1;
     c.width = innerWidth * dpr; c.height = innerHeight * dpr;
     ctx.scale(dpr, dpr);
-    const colours = ['#2563eb', '#d97706', '#16a34a', '#0f766e', '#eab308', '#ec4899'];
+    const colours = ['#dc2626', '#d97706', '#16a34a', '#0f766e', '#eab308', '#ec4899'];
     const bits = Array.from({ length: amount }, () => ({
       x: innerWidth / 2 + (Math.random() - .5) * 120, y: innerHeight * .35,
       vx: (Math.random() - .5) * 12, vy: -Math.random() * 12 - 4,

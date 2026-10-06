@@ -37,7 +37,7 @@ async function notifyListReady() {
   if (!s.totals.total) return;
   await push.notify(lang => ({
     title: t(lang, 'pushListTitle'),
-    body: `🔵 ${s.totals.change} ${t(lang, 'change')} · 🟡 ${s.totals.set} ${t(lang, 'set')}`,
+    body: `🔴 ${s.totals.change} ${t(lang, 'change')} · 🟡 ${s.totals.set} ${t(lang, 'set')}`,
     tag: 'daily-list',
   }));
 }
