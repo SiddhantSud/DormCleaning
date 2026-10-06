@@ -71,6 +71,20 @@ svg.ic { width: 1em; height: 1em; flex: none; }
 .chip.fire { background: #ffedd5; color: #c2410c; }
 .chip.me { background: var(--brand-soft); color: var(--brand); }
 
+/* ---------- Read aloud ---------- */
+.listen {
+  width: 100%; margin-top: 12px; padding: 15px; border-radius: 16px; background: var(--brand); color: #fff;
+  font-size: 17px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px;
+  box-shadow: var(--shadow);
+}
+.listen svg { font-size: 24px; }
+.listen.on { background: var(--ink); }
+.say-room {
+  width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; flex: none;
+  background: var(--brand-soft); color: var(--brand); font-size: 22px;
+}
+.say-room.on { background: var(--ink); color: #fff; }
+
 /* ---------- Legend ---------- */
 .legend { margin-top: 14px; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
 .legend summary { list-style: none; padding: 14px 16px; font-weight: 600; display: flex; align-items: center; gap: 10px; cursor: pointer; }
@@ -237,3 +251,6 @@ svg.ic { width: 1em; height: 1em; flex: none; }
 .foot button { color: var(--muted); font-size: 14px; display: inline-flex; gap: 6px; align-items: center; padding: 8px; }
 
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* Narrow phones: the room's tiles already show the counts, so make room for the speaker button. */
+@media (max-width: 420px) { .room-head .chips { display: none; } }

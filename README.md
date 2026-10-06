@@ -30,6 +30,9 @@ Each instruction has its own colour, icon and pattern, so staff can tell them ap
 - **Game** – points per bed (change 10, set 5, first photo of a room 5), a team progress
   ring, confetti when a room or the whole day is finished, *Star of the day*, a weekly
   scoreboard and a streak counter for days where every bed got done.
+- **Read aloud** – a **Listen to today's work** button (and a 🔊 on each room) reads out the
+  remaining beds in the chosen language using the phone's built-in voice. If the phone has
+  no voice for that language it reads in English (Nepali uses a Hindi voice if there's no Nepali one).
 - **Push notifications** – the bell button turns on alerts in each person's language:
   list ready, a reminder at `REMINDER_TIME` if beds are pending, and "all done".
   Managers can also get an alert for each finished room (Manager → *Alert me…*).

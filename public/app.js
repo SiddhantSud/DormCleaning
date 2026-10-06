@@ -19,6 +19,7 @@
     pushOn: false,
     pop: null,          // "room|bed" to animate after the next render
     pending: new Set(), // beds being saved
+    speaking: null,     // 'all' or a room letter while reading aloud
   };
 
   const t = (key, params) => translate(ui.lang || 'en', key, params);
@@ -182,6 +183,82 @@
     input.click();
   }
 
+  // ---------------- Read aloud ----------------
+  // Uses the phone's own text-to-speech voices, so it works offline and costs nothing.
+  const VOICE_FALLBACK = { ne: 'hi' }; // Nepali is written in Devanagari; a Hindi voice reads it well
+  const speechSupported = () => 'speechSynthesis' in window;
+
+  function findVoice(lang) {
+    const voices = speechSynthesis.getVoices();
+    const want = LOCALES[lang].toLowerCase();
+    const norm = v => v.lang.replace('_', '-').toLowerCase();
+    return voices.find(v => norm(v) === want) || voices.find(v => norm(v).startsWith(lang + '-') || norm(v) === lang);
+  }
+
+  function joinList(lang, items) {
+    if (items.length < 2) return items.join('');
+    return `${items.slice(0, -1).join(', ')} ${translate(lang, 'and')} ${items[items.length - 1]}`;
+  }
+
+  function roomScript(lang, r) {
+    const tr = (k, p) => translate(lang, k, p);
+    if (r.complete) return [tr('sayRoomDone', { room: r.room })];
+    const lines = [tr('sayRoom', { room: r.room })];
+    for (const a of ['change', 'set', 'leave']) {
+      const beds = r.beds.filter(b => b.action === a && !b.doneBy).map(b => b.bed);
+      if (beds.length) lines.push(tr('sayBeds', { action: tr(a), beds: joinList(lang, beds) }));
+    }
+    return lines;
+  }
+
+  function dayScript(lang) {
+    const tr = (k, p) => translate(lang, k, p);
+    const d = ui.data;
+    const left = d.totals.total - d.totals.done;
+    if (!left) return [tr('allDone')];
+    const lines = [tr('bedsLeft', { n: left }) + '.'];
+    if (d.nextRoom) lines.push(tr('sayStart', { room: d.nextRoom }));
+    for (const r of d.rooms) if (r.total > 0 && !r.complete) lines.push(...roomScript(lang, r));
+    return lines;
+  }
+
+  function stopSpeaking() {
+    if (speechSupported()) speechSynthesis.cancel();
+    ui.speaking = null;
+    render();
+  }
+
+  function speak(target) {
+    if (!speechSupported()) { toast(t('noSpeech')); return; }
+    if (ui.speaking === target) { stopSpeaking(); return; }
+    speechSynthesis.cancel();
+
+    let lang = ui.lang;
+    let voice = findVoice(lang) || (VOICE_FALLBACK[lang] && findVoice(VOICE_FALLBACK[lang]));
+    // Voices load lazily on some phones; only fall back to English once we know the list.
+    if (!voice && speechSynthesis.getVoices().length && lang !== 'en') {
+      toast(t('noVoice'));
+      lang = 'en';
+      voice = findVoice('en');
+    }
+    const room = target !== 'all' && ui.data.rooms.find(r => r.room === target);
+    const lines = room ? roomScript(lang, room) : dayScript(lang);
+
+    // One utterance per line gives natural pauses and avoids long-text cut-offs on Android.
+    lines.forEach((line, i) => {
+      const u = new SpeechSynthesisUtterance(line);
+      u.lang = voice ? voice.lang : LOCALES[lang];
+      if (voice) u.voice = voice;
+      u.rate = 0.9;
+      if (i === lines.length - 1) u.onend = u.onerror = () => { if (ui.speaking === target) { ui.speaking = null; render(); } };
+      speechSynthesis.speak(u);
+    });
+    ui.speaking = target;
+    render();
+  }
+
+  if (speechSupported()) speechSynthesis.getVoices(); // start loading voices early
+
   // ---------------- Push notifications ----------------
   const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 
@@ -236,6 +313,7 @@
         if (!code) return;
         ui.lang = code; store.set('lang', code);
         document.documentElement.lang = code;
+        if (ui.speaking) stopSpeaking();
         closeSheet(); render(); refreshPushState();
       }));
   }
@@ -374,6 +452,8 @@
           <div class="pips">${pips}</div>
         </div>
         ${isNext ? `<span class="badge-next">${t('startHere')}</span>` : `<div class="chips">${r.complete ? '' : counts}</div>`}
+        ${r.complete ? '' : `<button class="say-room ${ui.speaking === r.room ? 'on' : ''}" data-say="${esc(r.room)}"
+          aria-label="${esc(ui.speaking === r.room ? t('stop') : `${t('listenRoom')} – ${t('room')} ${r.room}`)}">${icon(ui.speaking === r.room ? 'stop' : 'speaker')}</button>`}
       </div>
       <div class="beds">${r.beds.map(b => bedTile(r.room, b)).join('')}</div>
       ${r.complete ? `<div class="room-photo">
@@ -452,10 +532,13 @@
         <div><b>✓</b><span>${t('tapWhenDone')}</span></div></div>
     </details>`;
 
+    const listen = left > 0 ? `<button class="listen ${ui.speaking === 'all' ? 'on' : ''}" data-say="all">
+        ${icon(ui.speaking === 'all' ? 'stop' : 'speaker')} ${ui.speaking === 'all' ? t('stop') : t('listen')}</button>` : '';
+
     const celebrate = left === 0 && d.totals.total ? `<div class="celebrate"><b>🎉 ${t('allDone')}</b>${t('pushAllDoneBody')}</div>` : '';
 
     $app.innerHTML = `${header}<div class="wrap">
-      ${offline}${hero}${celebrate}${legend}
+      ${offline}${hero}${listen}${celebrate}${legend}
       ${work.map(r => roomCard(r, r.room === d.nextRoom)).join('')}
       ${quiet.length ? `<div class="quiet-title">${icon('leave')} ${t('nothingToDo')}</div>
         <div class="quiet">${quiet.map(r => `<span>${t('room')} ${esc(r.room)}</span>`).join('')}</div>` : ''}
@@ -469,6 +552,7 @@
       const b = d.rooms.find(r => r.room === room).beds.find(x => x.bed === bed);
       b.doneBy ? bedSheet(room, bed) : markDone(room, bed, e);
     }));
+    $app.querySelectorAll('[data-say]').forEach(el => el.onclick = () => speak(el.dataset.say));
     $app.querySelectorAll('[data-photo]').forEach(el => el.onclick = () => pickPhoto(el.dataset.photo));
     $app.querySelectorAll('[data-tab]').forEach(el => el.onclick = () => { ui.tab = el.dataset.tab; render(); });
     $app.querySelector('#legend').addEventListener('toggle', e => store.set('legendClosed', e.target.open ? null : '1'));
