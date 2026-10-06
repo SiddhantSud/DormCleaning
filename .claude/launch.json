@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "demo",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["server.js"],
+      "port": 3000,
+      "env": {
+        "SHEET_CSV_FILE": "test/demo-sheet.csv",
+        "DATA_DIR": "data-demo",
+        "REFRESH_TIME": "00:00",
+        "REMINDER_TIME": "23:59"
+      }
+    }
+  ]
+}
